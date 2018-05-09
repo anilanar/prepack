@@ -448,24 +448,27 @@ export default class ObjectValue extends ConcreteValue {
   }
 
   defineNativeGetter(name: SymbolValue | string, callback: NativeFunctionCallback, desc?: Descriptor = {}) {
-    let intrinsicName, funcName;
-    if (typeof name === "string") {
-      funcName = `get ${name}`;
-      if (this.intrinsicName) intrinsicName = `${this.intrinsicName}.${name}`;
-    } else if (name instanceof SymbolValue) {
-      funcName =
-        name.$Description instanceof Value
-          ? `get [${name.$Description.throwIfNotConcreteString().value}]`
-          : `get [${"?"}]`;
-      if (this.intrinsicName && name.intrinsicName) intrinsicName = `${this.intrinsicName}[${name.intrinsicName}]`;
-    } else {
-      invariant(false);
-    }
-
-    let func = new NativeFunctionValue(this.$Realm, intrinsicName, funcName, 0, callback);
+    let getter = this._createPropertyNativeFunction(this.$Realm, name, callback, "get");
     this.$DefineOwnProperty(name, {
-      get: func,
+      get: getter,
       set: this.$Realm.intrinsics.undefined,
+      enumerable: false,
+      configurable: true,
+      ...desc,
+    });
+  }
+
+  defineNativeGetterSetter(
+    name: SymbolValue | string,
+    getterCallback: NativeFunctionCallback,
+    setterCallback: NativeFunctionCallback,
+    desc?: Descriptor = {}
+  ) {
+    let getter = this._createPropertyNativeFunction(this.$Realm, name, getterCallback, "get");
+    let setter = this._createPropertyNativeFunction(this.$Realm, name, setterCallback, "set");
+    this.$DefineOwnProperty(name, {
+      get: getter,
+      set: setter,
       enumerable: false,
       configurable: true,
       ...desc,
@@ -570,6 +573,46 @@ export default class ObjectValue extends ConcreteValue {
       Object.defineProperty(obj, key, serializedDesc);
     }
     return obj;
+  }
+
+  _createPropertyIntrinsicName(name: string | SymbolValue, prefix: "get" | "set") {
+    let intrinsicName;
+    if (typeof name === "string") {
+      if (this.intrinsicName)
+        intrinsicName = `Object.getOwnPropertyDescriptor(${this.intrinsicName}, "${name}").${prefix}`;
+    } else if (name instanceof SymbolValue) {
+      if (this.intrinsicName && name.intrinsicName) intrinsicName = `${this.intrinsicName}[${name.intrinsicName}]`;
+    } else {
+      invariant(false);
+    }
+    return intrinsicName;
+  }
+
+  _createPropertyFuncName(name: string | SymbolValue, prefix: "get" | "set"): string {
+    if (typeof name === "string") {
+      return `${prefix} ${name}`;
+    } else if (name instanceof SymbolValue) {
+      return name.$Description instanceof Value
+        ? `${prefix} [${name.$Description.throwIfNotConcreteString().value}]`
+        : `${prefix} [${"?"}]`;
+    } else {
+      invariant(false);
+    }
+  }
+
+  _createPropertyNativeFunction(
+    realm: Realm,
+    name: string | SymbolValue,
+    callback: NativeFunctionCallback,
+    type: "get" | "set"
+  ): NativeFunctionValue {
+    return new NativeFunctionValue(
+      this.$Realm,
+      this._createPropertyIntrinsicName(name, type),
+      this._createPropertyFuncName(name, type),
+      0,
+      callback
+    );
   }
 
   // ECMA262 9.1.1

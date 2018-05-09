@@ -10,14 +10,7 @@
 /* @flow */
 
 import type { Realm } from "../../realm.js";
-import {
-  AbstractValue,
-  NativeFunctionValue,
-  ObjectValue,
-  BooleanValue,
-  NullValue,
-  StringValue,
-} from "../../values/index.js";
+import { AbstractValue, ObjectValue, BooleanValue, NullValue, StringValue } from "../../values/index.js";
 import { SameValuePartial, RequireObjectCoercible } from "../../methods/abstract.js";
 import { HasOwnProperty, HasSomeCompatibleType } from "../../methods/has.js";
 import { Invoke } from "../../methods/call.js";
@@ -127,18 +120,20 @@ export default function(realm: Realm, obj: ObjectValue): void {
     return To.ToObject(realm, context);
   });
 
-  obj.$DefineOwnProperty("__proto__", {
+  obj.defineNativeGetterSetter(
+    "__proto__",
+
     // B.2.2.1.1
-    get: new NativeFunctionValue(realm, undefined, "get __proto__", 0, context => {
+    context => {
       // 1. Let O be ? ToObject(this value).
       let O = To.ToObject(realm, context);
 
       // 2. Return ? O.[[GetPrototypeOf]]().
       return O.$GetPrototypeOf();
-    }),
+    },
 
     // B.2.2.1.2
-    set: new NativeFunctionValue(realm, undefined, "set __proto__", 1, (context, [proto]) => {
+    (context, [proto]) => {
       // 1. Let O be ? RequireObjectCoercible(this value).
       let O = RequireObjectCoercible(realm, context);
 
@@ -159,6 +154,6 @@ export default function(realm: Realm, obj: ObjectValue): void {
 
       // 6. Return undefined.
       return realm.intrinsics.undefined;
-    }),
-  });
+    }
+  );
 }

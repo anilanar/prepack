@@ -10,7 +10,7 @@
 /* @flow */
 
 import type { Realm } from "../../realm.js";
-import { NumberValue, StringValue, NativeFunctionValue, ObjectValue } from "../../values/index.js";
+import { NumberValue, StringValue, ObjectValue } from "../../values/index.js";
 import { Call, CreateMapIterator, IsCallable, SameValueZeroPartial } from "../../methods/index.js";
 import { Properties } from "../../singletons.js";
 import invariant from "../../invariant.js";
@@ -257,38 +257,35 @@ export default function(realm: Realm, obj: ObjectValue): void {
   });
 
   // ECMA262 23.1.3.10
-  obj.$DefineOwnProperty("size", {
-    configurable: true,
-    get: new NativeFunctionValue(realm, undefined, "get size", 0, context => {
-      // 1. Let M be the this value.
-      let M = context.throwIfNotConcrete();
+  obj.defineNativeGetter("size", context => {
+    // 1. Let M be the this value.
+    let M = context.throwIfNotConcrete();
 
-      // 2. If Type(M) is not Object, throw a TypeError exception.
-      if (!(M instanceof ObjectValue)) {
-        throw realm.createErrorThrowCompletion(realm.intrinsics.TypeError);
-      }
+    // 2. If Type(M) is not Object, throw a TypeError exception.
+    if (!(M instanceof ObjectValue)) {
+      throw realm.createErrorThrowCompletion(realm.intrinsics.TypeError);
+    }
 
-      // 3. If M does not have a [[MapData]] internal slot, throw a TypeError exception.
-      if (!M.$MapData) {
-        throw realm.createErrorThrowCompletion(realm.intrinsics.TypeError);
-      }
+    // 3. If M does not have a [[MapData]] internal slot, throw a TypeError exception.
+    if (!M.$MapData) {
+      throw realm.createErrorThrowCompletion(realm.intrinsics.TypeError);
+    }
 
-      // 4. Let entries be the List that is the value of M's [[MapData]] internal slot.
-      let entries = M.$MapData;
-      invariant(entries !== undefined);
+    // 4. Let entries be the List that is the value of M's [[MapData]] internal slot.
+    let entries = M.$MapData;
+    invariant(entries !== undefined);
 
-      // 5. Let count be 0.
-      let count = 0;
+    // 5. Let count be 0.
+    let count = 0;
 
-      // 6. For each Record {[[Key]], [[Value]]} p that is an element of entries
-      for (let p of entries) {
-        // a. If p.[[Key]] is not empty, set count to count+1.
-        if (p.$Key !== undefined) count++;
-      }
+    // 6. For each Record {[[Key]], [[Value]]} p that is an element of entries
+    for (let p of entries) {
+      // a. If p.[[Key]] is not empty, set count to count+1.
+      if (p.$Key !== undefined) count++;
+    }
 
-      // 7. Return count.
-      return new NumberValue(realm, count);
-    }),
+    // 7. Return count.
+    return new NumberValue(realm, count);
   });
 
   // ECMA262 23.1.3.11

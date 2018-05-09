@@ -200,8 +200,9 @@ export default function(realm: Realm, obj: ObjectValue): void {
   });
 
   // ECMA262 23.2.3.9 get Set.prototype.size
-  obj.$DefineOwnProperty("size", {
-    get: new NativeFunctionValue(realm, undefined, "get size", 0, context => {
+  obj.defineNativeGetter(
+    "size",
+    new NativeFunctionValue(realm, undefined, "get size", 0, context => {
       // 1. Let S be the this value.
       let S = context.throwIfNotConcrete();
 
@@ -229,9 +230,8 @@ export default function(realm: Realm, obj: ObjectValue): void {
 
       // 7. Return count.
       return new NumberValue(realm, count);
-    }),
-    configurable: true,
-  });
+    })
+  );
 
   // ECMA262 23.2.3.10
   obj.defineNativeMethod("values", 0, context => {
